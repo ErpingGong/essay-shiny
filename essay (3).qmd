@@ -1,0 +1,179 @@
+---
+title: "Holocaust victims killed at Auschwitz concentration camp"
+author: Erping Gong
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: 
+  bookdown::pdf_document2
+toc: FALSE
+bibliography: reference.bib
+thanks: "Code and data are available at: https://github.com/ErpingGong/essay-shiny"
+---
+
+# Introduction to Auschwitz Victims Data
+
+This dataset offers a quantitative reflection on one of history’s darkest periods, derived from the records of Auschwitz-Birkenau Memorial and Museum. Accessible through their educational portal 70 Years of Auschwitz, the data represents a meticulous compilation of the nationalities and number of victims who were deported and ultimately lost their lives at Auschwitz. The concentration and extermination camp, operated by the Nazi regime, became a central site of the Holocaust's inhumanity.
+
+The dataset details the numbers, comprising approximately 1.1 million Jews, who constituted the majority of the camp’s victims. This is followed by significant groups of Poles, Roma (Gypsies), and Soviet POWs, along with others who were forcibly deported there. Each data entry indicates not only the count of deportees and fatalities but also the proportion of each group to the total number, thus shedding light on the methodical nature of the genocidal process. Furthermore, the mortality rates within each group speak to the brutal effectiveness of the camp's machinery of death.
+
+In preparing this dataset, R programming tools have been instrumental. The rvest package, authored by Hadley Wickham, was used to scrape web data with ease, and the dplyr package, also led by Wickham, facilitated data manipulation and cleaning. The use of such tools reflects the ongoing effort to preserve historical accuracy and facilitate the dissemination of knowledge regarding the Holocaust.
+
+# Result
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, tab.cap= "Total number of deportees and murdered in Auschwitz", results='asis'}
+#| label: tab-1
+library(knitr)
+library(dplyr)
+library(ggplot2)
+library(rvest)
+library(kableExtra)
+
+
+url <- "http://70.auschwitz.org/index.php?option=com_content&view=article&id=89&Itemid=173&lang=en"
+page <- read_html(url)
+table_nodes <- page %>% html_nodes("table")
+table_html <- table_nodes[1]
+
+tables <- table_html %>% html_table(fill = TRUE)
+table_df <- if(is.list(tables)) tables[[1]] else tables
+
+if("data.frame" %in% class(table_df)) {
+  names(table_df) <- as.character(table_df[1, ])
+  table_df <- table_df[-1, ] 
+
+  knitr::kable(table_df, booktabs = TRUE) %>% 
+    kable_styling(bootstrap_options = c("striped", "hover"))
+} else {
+  stop("table_df is not a data frame.")
+}
+
+```
+
+The data presented in Table \@ref(tab:tab-1) starkly illustrates the scale of the Holocaust atrocities perpetrated at Auschwitz, one of the most infamous Nazi concentration and extermination camps. The numbers reveal that the Jews, targeted systematically by the Nazi regime, constituted the overwhelming majority of the victims, with approximately 1.1 million deportees making up 85% of the total and 90% of these meeting their end in the camp, equating to 91% of all the camp's victims [@auschwitz_data].
+
+This starkly contrasts with other groups, though each faced significant persecution and mortality. For example, the Poles, while constituting approximately 10.8% of the deportees, had a lower proportion of fatalities relative to their number, approximately 46%, indicating a different treatment or purpose for their internment [@auschwitz_data]. Such data points highlight the calculated and cruel efficiency of the Nazi's genocidal policies, driven by a perverted ideology that sought to systematically categorize and exterminate entire ethnic and political groups.
+
+The data also include the Roma (Gypsies), another heavily targeted group, accounting for about 1.6% of the deportees but with a death rate of 91.3%, illustrating a particularly high fatality rate within the camp's ruthless confines. Similarly, the Soviet POWs, although fewer in number, faced an extremely high mortality rate at 93%, reflecting the harsh conditions and brutal treatment meted out to them [@auschwitz_data].
+
+In analyzing these numbers, it becomes evident that Auschwitz was not merely a site of mass murder but also a place where the process of killing was industrialized and the value of human life was reduced to nothing by the machinery of death. The data underscores the essential need to remember and educate about the Holocaust, ensuring that the memory of the victims endures and that such atrocities are never repeated.
+
+```{r, echo=FALSE, fig.cap= "Victims of Auschwitz: A Comparative Analysis by Nationality/Category"}
+#| label: fig-1
+library(ggplot2)
+library(RColorBrewer)
+library(dplyr)
+
+auschwitz_victims_data <- read.csv("auschwitz_victims_data.csv", stringsAsFactors = FALSE)
+
+clean_and_convert <- function(x) {
+  x <- gsub("~", "", x)           
+  x <- gsub("-", " ", x)           
+  x <- gsub("thousand", "e3", x)   
+  x <- gsub("million", "e6", x) 
+  x <- gsub(",", "", x)         
+  x <- gsub(" ", "", x)          
+  x <- as.numeric(x)              
+  return(x)
+}
+
+auschwitz_victims_data$Number.of.deportees <- clean_and_convert(auschwitz_victims_data$Number.of.deportees)
+auschwitz_victims_data$Number.of.victims <- clean_and_convert(auschwitz_victims_data$Number.of.victims)
+auschwitz_victims_data <- auschwitz_victims_data[!auschwitz_victims_data$Nationality.Category == "Total", ]
+
+ggplot(auschwitz_victims_data, aes(x = Nationality.Category, y = Number.of.victims, fill = Nationality.Category)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  scale_fill_brewer(palette = "Set1") +
+  labs(
+    x = "Nationality/Category",
+    y = "Number of Victims",
+    fill = "Nationality/Category"
+  )
+```
+
+Figure @ref(fig:Victims of Auschwitz: A Comparative Analysis by Nationality/Category) displays a stark visual contrast between the number of victims across the different groups. The overwhelming height of the bar representing Jewish victims immediately draws attention, symbolizing the extreme magnitude of Jewish lives lost, which far exceeds the numbers for other groups. With an estimated 1.1 million Jewish deportees, around 90% were murdered, accounting for 91% of all victims at Auschwitz. This visual representation underscores the targeted annihilation of Jews, central to the Nazi ideology of ethnic cleansing.
+
+In comparison, the bars for other groups, while significantly smaller, are no less important. They represent the widespread yet selective brutality of the camp. The Poles, Roma (Gypsies), and Soviet POWs each have their own stories of suffering and loss, albeit on a different scale. Notably, the graph illustrates that while the Poles comprised the second-largest group of deportees, the percentages show that they were not subjected to the same rate of killing as the Jewish and Roma populations, indicating a hierarchy of persecution.
+
+The Roma, with a death rate of 91.3%, and the Soviet POWs, with a death rate of 93%, although fewer in number, faced nearly certain death, reflecting the merciless efficiency of the camp's killing apparatus. The visualization of these numbers is a powerful reminder of the indiscriminate yet calculated nature of the mass murders that took place.
+
+Overall, the bar graph serves not only as a tool of historical analysis but also as a somber reminder of the individual lives behind the statistics. Each bar, with its respective height, tells a story of collective tragedy that compels us to remember and reflect upon the atrocities committed, ensuring that the lessons of the past remain a guidepost for the future.
+
+# Discussion
+
+The interactive elements of this analysis, which include the aforementioned bar graph and the detailed table, offer a more accessible pathway for readers to comprehend the scale of human loss. They enable us to filter and dissect the data, bringing into focus the harrowing reality of the individual lives extinguished during this grim period of history.
+
+Critically, the bar graph underscores a narrative that is as painful as it is instructive: it reveals the systematic and industrialized nature of the genocide perpetrated against the Jewish people, who were the primary targets of Nazi extermination efforts. Similarly, the victimization of Poles, Roma (Gypsies), Soviet POWs, and other groups, each represented by their respective bars, narrates a broader context of widespread brutality and the perverse ideological doctrines that sought to rationalize such atrocities.
+
+I confront this history not only with a sense of profound sorrow but also with indignation. It is incumbent upon us to not only recount the facts but also to acknowledge the moral failures that allowed such events to unfold. The Holocaust stands as a stark testament to the depths of cruelty that can arise from perverted ideologies, racial hatred, and the abdication of moral responsibility.
+
+The interactive elements of this analysis, while informative, also serve as a clarion call to preserve the dignity of the individuals behind the numbers. Each interaction with the data is a remembrance, an affirmation of the victims' humanity against the impersonal machinery of genocide that sought to erase their existence.
+
+Furthermore, this digital interaction with the data of the past must galvanize us into a commitment towards vigilance against the resurgence of ideologies that espouse racial purity or ethnic superiority. It is a cautionary tale, reminding us that the line separating civilization from barbarity is tenuous and must be safeguarded with relentless resolve.
+
+In this spirit, the analysis is not just an academic exercise but a moral imperative: to criticize history is to engage with its lessons actively and to ensure that "Never Again" is not a mere slogan but a lived principle guiding our collective conscience.
+
+# Shiny 
+```{r, message=FALSE}
+library(shiny)
+library(ggplot2)
+library(RColorBrewer)
+library(DT)
+library(dplyr)
+
+auschwitz_victims_data <- read.csv("auschwitz_victims_data.csv", stringsAsFactors = FALSE)
+
+ui <- fluidPage(
+  titlePanel("Auschwitz Victims Data"),
+  
+  sidebarLayout(
+    sidebarPanel(
+      checkboxGroupInput("selected_nationalities",
+                         "Select nationality/categories:",
+                         choices = unique(auschwitz_victims_data$Nationality.Category),
+                         selected = unique(auschwitz_victims_data$Nationality.Category))
+    ),
+    mainPanel(
+      tabsetPanel(
+        tabPanel("Plot", plotOutput("victimsPlot")),
+        tabPanel("Table", DTOutput("victimsTable"))
+      )
+    )
+  )
+)
+
+
+server <- function(input, output) {
+  # Reactive data for selected nationalities/categories
+  filtered_data <- reactive({
+    auschwitz_victims_data %>%
+      filter(Nationality.Category %in% input$selected_nationalities)
+  })
+
+
+  output$victimsPlot <- renderPlot({
+    ggplot(filtered_data(), aes(x = Nationality.Category, y = Number.of.victims, fill = Nationality.Category)) +
+      geom_bar(stat = "identity") +
+      theme_minimal() +
+      scale_fill_brewer(palette = "Set1") +
+      labs(
+        x = "Nationality/Category",
+        y = "Number of Victims",
+        fill = "Nationality/Category"
+      )
+  })
+  
+
+  output$victimsTable <- renderDT({
+    datatable(
+      filtered_data() %>%
+        select(Nationality.Category, Number.of.victims, Percentage.of.all.victims),
+      options = list(pageLength = 5)
+    )
+  })
+}
+
+
+shinyApp(ui = ui, server = server)
+
+```
+
